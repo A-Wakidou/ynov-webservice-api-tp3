@@ -2,6 +2,7 @@ const express = require('express')
 const helmet = require("helmet")
 const bodyParser = require('body-parser')
 require('dotenv').config()
+const jwt = require('jsonwebtoken')
 
 const accountRoutes = require('./routes/account')
 const tokenRoutes = require('./routes/token')
@@ -20,7 +21,7 @@ app.use(function (req, res, next) {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE')
     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization')
     res.setHeader('Access-Control-Allow-Credentials', true)
-    next();
+    next()
 })
 
 app.use(bodyParser.json())
@@ -29,7 +30,14 @@ app.use('/api/account', accountRoutes)
 app.use('/api/refresh-token', refreshTokenRoutes)
 app.use('/api/token', tokenRoutes)
 app.use('/api/validate', (req, res) => {
-    console.log(req)
+    jwt.verify(req.query.accessToken, 'TOKEN_SECRET', (err, decoded) => {
+        if(decoded) {
+            res.status(200).send('Token valide !')
+        }
+        if(err) {
+            res.status(404).send('Token invalide !')
+        }
+    })
 })
 
 

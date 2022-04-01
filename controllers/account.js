@@ -2,15 +2,72 @@ const Users = require('../models/users')
 const bcrypt = require('bcrypt')
 
 exports.getAccount = (req, res) => {
-    Users.findOne({
-        where: {id: req.query.uid}
-    })
-        .then((response => {
-            res.status(200).json(response)
-        }))
-        .catch( err => {
-            return res.status(400).json({error: err})
-        }) 
+    if(req.params.role == 'ROLE_USER') {
+        if(req.query.uid != req.params.uid) {
+            return res.status(403).send('Compte admin ou propriétaire du compte necessaire')
+        }
+        else {
+            Users.findOne({
+                where: {id: req.query.uid}
+            })
+                .then((response => {
+                    res.status(200).json(response)
+                }))
+                .catch( err => {
+                    return res.status(400).json({error: err})
+                }) 
+        }
+    }
+    else {
+        Users.findOne({
+            where: {id: req.query.uid}
+        })
+            .then((response => {
+                res.status(200).json(response)
+            }))
+            .catch( err => {
+                console.log(err)
+                return res.status(400).json({error: err})
+            }) 
+    }
+}
+
+exports.editAccount = (req, res) => {
+    if(req.params.role == 'ROLE_USER') {
+        if(req.query.uid != req.params.uid) {
+            return res.status(403).send('Compte admin ou propriétaire du compte necessaire')
+        }
+        else {
+            bcrypt.hash(req.body.password, 10)
+            .then(hash => {
+                Users.update(
+                    {login: req.body.login, password: hash},
+                    {where: {id: req.query.uid}},
+                )
+                    .then( () => {
+                        res.status(200).send('Compte modifié !')
+                    })
+                    .catch( err => {
+                        return res.status(400).json({error: err})
+                    })
+            })
+        }
+    }
+    else {
+        bcrypt.hash(req.body.password, 10)
+        .then(hash => {
+            Users.update(
+                {login: req.body.login, password: hash, role: req.body.role},
+                {where: {id: req.query.uid}},
+            )
+                .then( () => {
+                    res.status(200).send('Compte modifié !')
+                })
+                .catch( err => {
+                    return res.status(400).json({error: err})
+                })
+        })
+    }
 }
 
 exports.createAccount = (req, res) => {
@@ -50,18 +107,4 @@ exports.createAccount = (req, res) => {
         .catch(err => {
             console.log(err)
         })
-}
-
-exports.editAccount = (req, res) => {
-    Movies.findOne( {
-        where : { id: req.query.movieId},
-        include: ['category']
-    })
-        .then( (response => {
-            res.status(200).json({category: response.dataValues.category.dataValues.name})
-        }))
-        .catch( err => {
-            console.log(err)
-            return res.status(404).json({error: err})
-        }) 
 }
